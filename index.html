@@ -29,6 +29,7 @@ h1 {
     margin-bottom: 15px;
 }
 
+/* START SCREEN */
 #startScreen {
     min-height: 100vh;
     padding: 25px 15px;
@@ -64,6 +65,7 @@ h1 {
     cursor: pointer;
 }
 
+/* GAME */
 #gameScreen {
     display: none;
     padding-top: 10px;
@@ -124,6 +126,7 @@ canvas {
 
 <body>
 
+<!-- START SCREEN -->
 <div id="startScreen">
 
     <img id="startImage" src="16631.jpeg" alt="Start Image">
@@ -139,6 +142,7 @@ canvas {
 </div>
 
 
+<!-- GAME SCREEN -->
 <div id="gameScreen">
 
     <h1>🐍 Snake Game</h1>
@@ -197,7 +201,20 @@ let score;
 let gameLoop;
 
 
-/* AUDIO */
+/* =========================
+   SPEED
+========================= */
+
+let gameSpeed = 180;
+
+const startingSpeed = 180;
+const maximumSpeed = 75;
+const speedIncrease = 8;
+
+
+/* =========================
+   AUDIO
+========================= */
 
 const bgMusic = document.getElementById("bgMusic");
 const eatSound = document.getElementById("eatSound");
@@ -208,35 +225,32 @@ eatSound.volume = 0.8;
 gameOverSound.volume = 0.9;
 
 
-/* START GAME */
+/* =========================
+   START GAME
+========================= */
 
 function startGame() {
 
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
 
-    /*
-       User click-এর মধ্যেই music চালু করছি।
-       Android browser-এর জন্য এটা বেশি reliable।
-    */
-
     bgMusic.currentTime = 0;
 
     const musicPromise = bgMusic.play();
 
     if (musicPromise !== undefined) {
-
         musicPromise.catch(function(error) {
             console.log("Music error:", error);
         });
-
     }
 
     restartGame(false);
 }
 
 
-/* RESTART */
+/* =========================
+   RESTART
+========================= */
 
 function restartGame(playMusic = true) {
 
@@ -253,10 +267,16 @@ function restartGame(playMusic = true) {
 
     score = 0;
 
+    /* Reset speed */
+    gameSpeed = startingSpeed;
+
     document.getElementById("scoreValue").innerText = score;
     document.getElementById("message").innerText = "";
 
     createFood();
+
+
+    /* MUSIC */
 
     if (playMusic) {
 
@@ -265,20 +285,21 @@ function restartGame(playMusic = true) {
         const musicPromise = bgMusic.play();
 
         if (musicPromise !== undefined) {
-
             musicPromise.catch(function(error) {
                 console.log("Music error:", error);
             });
-
         }
 
     }
 
-    gameLoop = setInterval(drawGame, 130);
+
+    gameLoop = setInterval(drawGame, gameSpeed);
 }
 
 
-/* FOOD */
+/* =========================
+   FOOD
+========================= */
 
 function createFood() {
 
@@ -298,20 +319,27 @@ function createFood() {
 }
 
 
-/* DIRECTION */
+/* =========================
+   DIRECTION
+========================= */
 
 function changeDirection(newDirection) {
 
     if (direction === "up" && newDirection === "down") return;
+
     if (direction === "down" && newDirection === "up") return;
+
     if (direction === "left" && newDirection === "right") return;
+
     if (direction === "right" && newDirection === "left") return;
 
     nextDirection = newDirection;
 }
 
 
-/* KEYBOARD */
+/* =========================
+   KEYBOARD
+========================= */
 
 document.addEventListener("keydown", function(event) {
 
@@ -334,14 +362,22 @@ document.addEventListener("keydown", function(event) {
 });
 
 
-/* DRAW GAME */
+/* =========================
+   DRAW GAME
+========================= */
 
 function drawGame() {
 
     direction = nextDirection;
 
     ctx.fillStyle = "#181818";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
 
 
     /* FOOD */
@@ -381,7 +417,7 @@ function drawGame() {
     });
 
 
-    /* HEAD */
+    /* HEAD POSITION */
 
     let headX = snake[0].x;
     let headY = snake[0].y;
@@ -404,7 +440,7 @@ function drawGame() {
     }
 
 
-    /* WALL */
+    /* WALL COLLISION */
 
     if (
         headX < 0 ||
@@ -414,157 +450,3 @@ function drawGame() {
     ) {
 
         gameOver();
-        return;
-
-    }
-
-
-    /* BODY */
-
-    for (let i = 0; i < snake.length; i++) {
-
-        if (
-            headX === snake[i].x &&
-            headY === snake[i].y
-        ) {
-
-            gameOver();
-            return;
-
-        }
-
-    }
-
-
-    let newHead = {
-        x: headX,
-        y: headY
-    };
-
-    snake.unshift(newHead);
-
-
-    /* EAT FOOD */
-
-    if (
-        headX === food.x &&
-        headY === food.y
-    ) {
-
-        score++;
-
-        document.getElementById("scoreValue").innerText = score;
-
-
-        /* EATING SOUND */
-
-        eatSound.currentTime = 0;
-
-        const eatPromise = eatSound.play();
-
-        if (eatPromise !== undefined) {
-
-            eatPromise.catch(function(error) {
-                console.log("Eating sound error:", error);
-            });
-
-        }
-
-        createFood();
-
-    } else {
-
-        snake.pop();
-
-    }
-
-}
-
-
-/* GAME OVER */
-
-function gameOver() {
-
-    clearInterval(gameLoop);
-
-
-    /* STOP BACKGROUND MUSIC */
-
-    bgMusic.pause();
-    bgMusic.currentTime = 0;
-
-
-    /* GAME OVER SOUND */
-
-    gameOverSound.currentTime = 0;
-
-    const gameOverPromise = gameOverSound.play();
-
-    if (gameOverPromise !== undefined) {
-
-        gameOverPromise.catch(function(error) {
-            console.log("Game Over sound error:", error);
-        });
-
-    }
-
-
-    document.getElementById("message").innerText =
-        "💀 Game Over! Score: " + score;
-
-}
-
-
-/* TOUCH SWIPE */
-
-let touchStartX = 0;
-let touchStartY = 0;
-
-
-canvas.addEventListener("touchstart", function(e) {
-
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-
-}, {passive: true});
-
-
-canvas.addEventListener("touchend", function(e) {
-
-    let touchEndX = e.changedTouches[0].clientX;
-    let touchEndY = e.changedTouches[0].clientY;
-
-    let dx = touchEndX - touchStartX;
-    let dy = touchEndY - touchStartY;
-
-
-    if (Math.abs(dx) > Math.abs(dy)) {
-
-        if (dx > 30) {
-            changeDirection("right");
-        }
-
-        else if (dx < -30) {
-            changeDirection("left");
-        }
-
-    }
-
-    else {
-
-        if (dy > 30) {
-            changeDirection("down");
-        }
-
-        else if (dy < -30) {
-            changeDirection("up");
-        }
-
-    }
-
-}, {passive: true});
-
-</script>
-
-</body>
-</html>
