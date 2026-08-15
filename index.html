@@ -124,8 +124,6 @@ canvas {
 
 <body>
 
-<!-- START SCREEN -->
-
 <div id="startScreen">
 
     <img id="startImage" src="16631.jpeg" alt="Start Image">
@@ -134,14 +132,12 @@ canvas {
         তাহলে শুরু করা যাক লিমন বাবু 😎
     </div>
 
-    <button id="startButton" onclick="startGame()">
+    <button id="startButton">
         🎮 START GAME
     </button>
 
 </div>
 
-
-<!-- GAME SCREEN -->
 
 <div id="gameScreen">
 
@@ -176,13 +172,9 @@ canvas {
 </div>
 
 
-<!-- AUDIO -->
-
-<audio id="bgMusic" src="Meaw9090.mp3" loop preload="auto"></audio>
-
-<audio id="eatSound" src="Eating9090.mp3" preload="auto"></audio>
-
-<audio id="gameOverSound" src="End9090.mp3" preload="auto"></audio>
+<audio id="bgMusic" src="Meaw9090.mp3" loop></audio>
+<audio id="eatSound" src="Eating9090.mp3"></audio>
+<audio id="gameOverSound" src="End9090.mp3"></audio>
 
 
 <script>
@@ -191,7 +183,7 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 const box = 30;
-const totalBoxes = canvas.width / box;
+const totalBoxes = 20;
 
 let snake;
 let food;
@@ -202,17 +194,7 @@ let score;
 let gameTimer = null;
 let gameRunning = false;
 
-
-/* SPEED */
-
-const startingSpeed = 180;
-const minimumSpeed = 75;
-const speedIncrease = 8;
-
-let gameSpeed = startingSpeed;
-
-
-/* AUDIO */
+let gameSpeed = 180;
 
 const bgMusic = document.getElementById("bgMusic");
 const eatSound = document.getElementById("eatSound");
@@ -223,33 +205,37 @@ eatSound.volume = 0.8;
 gameOverSound.volume = 0.9;
 
 
-/* START GAME */
+/* START BUTTON */
 
-function startGame() {
+document.getElementById("startButton").addEventListener("click", function() {
 
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
 
+    startGame();
+
+});
+
+
+/* START GAME */
+
+function startGame() {
+
     bgMusic.currentTime = 0;
+    bgMusic.play().catch(function() {});
 
-    bgMusic.play().catch(function(error) {
-        console.log("Music error:", error);
-    });
+    restartGame();
 
-    restartGame(false);
 }
 
 
 /* RESTART */
 
-function restartGame(playMusic = true) {
+function restartGame() {
 
     if (gameTimer !== null) {
         clearTimeout(gameTimer);
-        gameTimer = null;
     }
-
-    gameRunning = false;
 
     snake = [
         {x: 10 * box, y: 10 * box},
@@ -261,17 +247,261 @@ function restartGame(playMusic = true) {
     nextDirection = "right";
 
     score = 0;
+    gameSpeed = 180;
+    gameRunning = true;
 
-    gameSpeed = startingSpeed;
-
-    document.getElementById("scoreValue").innerText = score;
+    document.getElementById("scoreValue").innerText = "0";
     document.getElementById("message").innerText = "";
 
     createFood();
 
-    if (playMusic) {
+    drawGame();
 
-        bgMusic.currentTime = 0;
+}
 
-        bgMusic.play().catch(function(error) {
-            console
+
+/* FOOD */
+
+function createFood() {
+
+    food = {
+        x: Math.floor(Math.random() * totalBoxes) * box,
+        y: Math.floor(Math.random() * totalBoxes) * box
+    };
+
+    for (let part of snake) {
+
+        if (food.x === part.x && food.y === part.y) {
+            createFood();
+            return;
+        }
+
+    }
+
+}
+
+
+/* DIRECTION */
+
+function changeDirection(newDirection) {
+
+    if (direction === "up" && newDirection === "down") return;
+    if (direction === "down" && newDirection === "up") return;
+    if (direction === "left" && newDirection === "right") return;
+    if (direction === "right" && newDirection === "left") return;
+
+    nextDirection = newDirection;
+
+}
+
+
+/* KEYBOARD */
+
+document.addEventListener("keydown", function(event) {
+
+    if (event.key === "ArrowUp") changeDirection("up");
+    if (event.key === "ArrowDown") changeDirection("down");
+    if (event.key === "ArrowLeft") changeDirection("left");
+    if (event.key === "ArrowRight") changeDirection("right");
+
+});
+
+
+/* GAME */
+
+function drawGame() {
+
+    if (!gameRunning) return;
+
+    direction = nextDirection;
+
+    ctx.fillStyle = "#181818";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+    /* FOOD */
+
+    ctx.fillStyle = "#ff3030";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        food.x + box / 2,
+        food.y + box / 2,
+        box / 2 - 3,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    /* SNAKE */
+
+    snake.forEach(function(part, index) {
+
+        ctx.fillStyle =
+            index === 0 ? "#00ff65" : "#00c853";
+
+        ctx.fillRect(
+            part.x + 2,
+            part.y + 2,
+            box - 4,
+            box - 4
+        );
+
+    });
+
+
+    let headX = snake[0].x;
+    let headY = snake[0].y;
+
+
+    if (direction === "up") headY -= box;
+    if (direction === "down") headY += box;
+    if (direction === "left") headX -= box;
+    if (direction === "right") headX += box;
+
+
+    /* WALL */
+
+    if (
+        headX < 0 ||
+        headY < 0 ||
+        headX >= canvas.width ||
+        headY >= canvas.height
+    ) {
+
+        gameOver();
+        return;
+
+    }
+
+
+    /* BODY */
+
+    for (let part of snake) {
+
+        if (
+            headX === part.x &&
+            headY === part.y
+        ) {
+
+            gameOver();
+            return;
+
+        }
+
+    }
+
+
+    snake.unshift({
+        x: headX,
+        y: headY
+    });
+
+
+    /* FOOD */
+
+    if (
+        headX === food.x &&
+        headY === food.y
+    ) {
+
+        score++;
+
+        document.getElementById("scoreValue").innerText = score;
+
+        eatSound.currentTime = 0;
+        eatSound.play().catch(function() {});
+
+
+        /* SPEED */
+
+        if (gameSpeed > 75) {
+            gameSpeed -= 8;
+
+            if (gameSpeed < 75) {
+                gameSpeed = 75;
+            }
+        }
+
+        createFood();
+
+    } else {
+
+        snake.pop();
+
+    }
+
+
+    /* NEXT MOVE */
+
+    gameTimer = setTimeout(drawGame, gameSpeed);
+
+}
+
+
+/* GAME OVER */
+
+function gameOver() {
+
+    gameRunning = false;
+
+    if (gameTimer !== null) {
+        clearTimeout(gameTimer);
+        gameTimer = null;
+    }
+
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+
+    gameOverSound.currentTime = 0;
+    gameOverSound.play().catch(function() {});
+
+    document.getElementById("message").innerText =
+        "💀 Game Over! Score: " + score;
+
+}
+
+
+/* TOUCH */
+
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener("touchstart", function(e) {
+
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+
+}, {passive: true});
+
+
+canvas.addEventListener("touchend", function(e) {
+
+    let touchEndX = e.changedTouches[0].clientX;
+    let touchEndY = e.changedTouches[0].clientY;
+
+    let dx = touchEndX - touchStartX;
+    let dy = touchEndY - touchStartY;
+
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+
+        if (dx > 30) changeDirection("right");
+        if (dx < -30) changeDirection("left");
+
+    } else {
+
+        if (dy > 30) changeDirection("down");
+        if (dy < -30) changeDirection("up");
+
+    }
+
+}, {passive: true});
+
+</script>
+
+</body>
+</html>
