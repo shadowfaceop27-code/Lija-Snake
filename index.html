@@ -193,6 +193,21 @@ let gameLoop;
 let gameStarted = false;
 
 
+/* =========================
+   SOUND
+========================= */
+
+const backgroundMusic = new Audio("Meaw9090.mp3");
+const eatingSound = new Audio("Eating9090.mp3");
+const gameOverSound = new Audio("End9090.mp3");
+
+backgroundMusic.loop = true;
+
+backgroundMusic.volume = 0.5;
+eatingSound.volume = 0.8;
+gameOverSound.volume = 0.9;
+
+
 /* START GAME */
 function startGame() {
 
@@ -225,6 +240,12 @@ function restartGame() {
     document.getElementById("message").innerText = "";
 
     createFood();
+
+    /* Background music */
+    backgroundMusic.currentTime = 0;
+    backgroundMusic.play().catch(function(error) {
+        console.log("Background music could not play:", error);
+    });
 
     gameLoop = setInterval(drawGame, 130);
 }
@@ -394,6 +415,12 @@ function drawGame() {
 
         document.getElementById("scoreValue").innerText = score;
 
+        /* Eating sound */
+        eatingSound.currentTime = 0;
+        eatingSound.play().catch(function(error) {
+            console.log("Eating sound could not play:", error);
+        });
+
         createFood();
 
     } else {
@@ -409,6 +436,16 @@ function drawGame() {
 function gameOver() {
 
     clearInterval(gameLoop);
+
+    /* Background music বন্ধ */
+    backgroundMusic.pause();
+    backgroundMusic.currentTime = 0;
+
+    /* Game Over sound */
+    gameOverSound.currentTime = 0;
+    gameOverSound.play().catch(function(error) {
+        console.log("Game Over sound could not play:", error);
+    });
 
     document.getElementById("message").innerText =
         "💀 Game Over! Score: " + score;
