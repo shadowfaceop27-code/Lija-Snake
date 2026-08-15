@@ -29,7 +29,6 @@ h1 {
     margin-bottom: 15px;
 }
 
-/* START SCREEN */
 #startScreen {
     min-height: 100vh;
     padding: 25px 15px;
@@ -65,7 +64,6 @@ h1 {
     cursor: pointer;
 }
 
-/* GAME */
 #gameScreen {
     display: none;
     padding-top: 10px;
@@ -126,7 +124,6 @@ canvas {
 
 <body>
 
-<!-- START SCREEN -->
 <div id="startScreen">
 
     <img id="startImage" src="16631.jpeg" alt="Start Image">
@@ -142,7 +139,6 @@ canvas {
 </div>
 
 
-<!-- GAME SCREEN -->
 <div id="gameScreen">
 
     <h1>🐍 Snake Game</h1>
@@ -176,6 +172,15 @@ canvas {
 </div>
 
 
+<!-- AUDIO -->
+
+<audio id="bgMusic" src="Meaw9090.mp3" loop preload="auto"></audio>
+
+<audio id="eatSound" src="Eating9090.mp3" preload="auto"></audio>
+
+<audio id="gameOverSound" src="End9090.mp3" preload="auto"></audio>
+
+
 <script>
 
 const canvas = document.getElementById("game");
@@ -190,38 +195,50 @@ let direction;
 let nextDirection;
 let score;
 let gameLoop;
-let gameStarted = false;
 
 
-/* =========================
-   SOUND
-========================= */
+/* AUDIO */
 
-const backgroundMusic = new Audio("Meaw9090.mp3");
-const eatingSound = new Audio("Eating9090.mp3");
-const gameOverSound = new Audio("End9090.mp3");
+const bgMusic = document.getElementById("bgMusic");
+const eatSound = document.getElementById("eatSound");
+const gameOverSound = document.getElementById("gameOverSound");
 
-backgroundMusic.loop = true;
-
-backgroundMusic.volume = 0.5;
-eatingSound.volume = 0.8;
+bgMusic.volume = 0.5;
+eatSound.volume = 0.8;
 gameOverSound.volume = 0.9;
 
 
 /* START GAME */
+
 function startGame() {
 
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
 
-    gameStarted = true;
+    /*
+       User click-এর মধ্যেই music চালু করছি।
+       Android browser-এর জন্য এটা বেশি reliable।
+    */
 
-    restartGame();
+    bgMusic.currentTime = 0;
+
+    const musicPromise = bgMusic.play();
+
+    if (musicPromise !== undefined) {
+
+        musicPromise.catch(function(error) {
+            console.log("Music error:", error);
+        });
+
+    }
+
+    restartGame(false);
 }
 
 
 /* RESTART */
-function restartGame() {
+
+function restartGame(playMusic = true) {
 
     clearInterval(gameLoop);
 
@@ -241,17 +258,28 @@ function restartGame() {
 
     createFood();
 
-    /* Background music */
-    backgroundMusic.currentTime = 0;
-    backgroundMusic.play().catch(function(error) {
-        console.log("Background music could not play:", error);
-    });
+    if (playMusic) {
+
+        bgMusic.currentTime = 0;
+
+        const musicPromise = bgMusic.play();
+
+        if (musicPromise !== undefined) {
+
+            musicPromise.catch(function(error) {
+                console.log("Music error:", error);
+            });
+
+        }
+
+    }
 
     gameLoop = setInterval(drawGame, 130);
 }
 
 
 /* FOOD */
+
 function createFood() {
 
     food = {
@@ -259,7 +287,6 @@ function createFood() {
         y: Math.floor(Math.random() * totalBoxes) * box
     };
 
-    /* Food যেন snake-এর ভিতরে না আসে */
     for (let part of snake) {
 
         if (food.x === part.x && food.y === part.y) {
@@ -272,6 +299,7 @@ function createFood() {
 
 
 /* DIRECTION */
+
 function changeDirection(newDirection) {
 
     if (direction === "up" && newDirection === "down") return;
@@ -284,6 +312,7 @@ function changeDirection(newDirection) {
 
 
 /* KEYBOARD */
+
 document.addEventListener("keydown", function(event) {
 
     if (event.key === "ArrowUp") {
@@ -306,6 +335,7 @@ document.addEventListener("keydown", function(event) {
 
 
 /* DRAW GAME */
+
 function drawGame() {
 
     direction = nextDirection;
@@ -315,9 +345,11 @@ function drawGame() {
 
 
     /* FOOD */
+
     ctx.fillStyle = "#ff3030";
 
     ctx.beginPath();
+
     ctx.arc(
         food.x + box / 2,
         food.y + box / 2,
@@ -330,6 +362,7 @@ function drawGame() {
 
 
     /* SNAKE */
+
     snake.forEach(function(part, index) {
 
         if (index === 0) {
@@ -348,7 +381,8 @@ function drawGame() {
     });
 
 
-    /* HEAD POSITION */
+    /* HEAD */
+
     let headX = snake[0].x;
     let headY = snake[0].y;
 
@@ -370,27 +404,33 @@ function drawGame() {
     }
 
 
-    /* WALL COLLISION */
+    /* WALL */
+
     if (
         headX < 0 ||
         headY < 0 ||
         headX >= canvas.width ||
         headY >= canvas.height
     ) {
+
         gameOver();
         return;
+
     }
 
 
-    /* BODY COLLISION */
+    /* BODY */
+
     for (let i = 0; i < snake.length; i++) {
 
         if (
             headX === snake[i].x &&
             headY === snake[i].y
         ) {
+
             gameOver();
             return;
+
         }
 
     }
@@ -401,11 +441,11 @@ function drawGame() {
         y: headY
     };
 
-
     snake.unshift(newHead);
 
 
     /* EAT FOOD */
+
     if (
         headX === food.x &&
         headY === food.y
@@ -415,11 +455,20 @@ function drawGame() {
 
         document.getElementById("scoreValue").innerText = score;
 
-        /* Eating sound */
-        eatingSound.currentTime = 0;
-        eatingSound.play().catch(function(error) {
-            console.log("Eating sound could not play:", error);
-        });
+
+        /* EATING SOUND */
+
+        eatSound.currentTime = 0;
+
+        const eatPromise = eatSound.play();
+
+        if (eatPromise !== undefined) {
+
+            eatPromise.catch(function(error) {
+                console.log("Eating sound error:", error);
+            });
+
+        }
 
         createFood();
 
@@ -433,28 +482,44 @@ function drawGame() {
 
 
 /* GAME OVER */
+
 function gameOver() {
 
     clearInterval(gameLoop);
 
-    /* Background music বন্ধ */
-    backgroundMusic.pause();
-    backgroundMusic.currentTime = 0;
 
-    /* Game Over sound */
+    /* STOP BACKGROUND MUSIC */
+
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+
+
+    /* GAME OVER SOUND */
+
     gameOverSound.currentTime = 0;
-    gameOverSound.play().catch(function(error) {
-        console.log("Game Over sound could not play:", error);
-    });
+
+    const gameOverPromise = gameOverSound.play();
+
+    if (gameOverPromise !== undefined) {
+
+        gameOverPromise.catch(function(error) {
+            console.log("Game Over sound error:", error);
+        });
+
+    }
+
 
     document.getElementById("message").innerText =
         "💀 Game Over! Score: " + score;
+
 }
 
 
 /* TOUCH SWIPE */
+
 let touchStartX = 0;
 let touchStartY = 0;
+
 
 canvas.addEventListener("touchstart", function(e) {
 
@@ -472,19 +537,26 @@ canvas.addEventListener("touchend", function(e) {
     let dx = touchEndX - touchStartX;
     let dy = touchEndY - touchStartY;
 
+
     if (Math.abs(dx) > Math.abs(dy)) {
 
         if (dx > 30) {
             changeDirection("right");
-        } else if (dx < -30) {
+        }
+
+        else if (dx < -30) {
             changeDirection("left");
         }
 
-    } else {
+    }
+
+    else {
 
         if (dy > 30) {
             changeDirection("down");
-        } else if (dy < -30) {
+        }
+
+        else if (dy < -30) {
             changeDirection("up");
         }
 
